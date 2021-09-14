@@ -80,7 +80,12 @@ func encodeSegWitAddress(hrp string, witnessVersion byte, witnessProgram []byte)
 	combined := make([]byte, len(converted)+1)
 	combined[0] = witnessVersion
 	copy(combined[1:], converted)
-	bech, err := bech32.Encode(hrp, combined)
+	var bech string
+	if witnessVersion == 0 {
+		bech, err = bech32.Encode(hrp, combined)
+	} else {
+		bech, err = bech32.EncodeM(hrp, combined)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -151,8 +156,8 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			// and we proceed to try decoding as a legacy address below.
 			if err == nil {
 				// We currently only support P2WPKH and P2WSH, which is
-				// witness version 0.
-				if witnessVer != 0 {
+				// witness version 0 and taproot version 1.
+				if witnessVer > 1 {
 					return nil, UnsupportedWitnessVerError(witnessVer)
 				}
 
@@ -163,7 +168,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 				case 20:
 					return newAddressWitnessPubKeyHash(hrp, witnessProg)
 				case 32:
-					return newAddressWitnessScriptHash(hrp, witnessProg)
+					return newAddressWitnessScriptHash(hrp, witnessVer, witnessProg)
 				default:
 					return nil, UnsupportedWitnessProgLenError(len(witnessProg))
 				}
@@ -631,13 +636,18 @@ type AddressWitnessScriptHash struct {
 
 // NewAddressWitnessScriptHash returns a new AddressWitnessPubKeyHash.
 func NewAddressWitnessScriptHash(witnessProg []byte, net *chaincfg.Params) (*AddressWitnessScriptHash, error) {
-	return newAddressWitnessScriptHash(net.Bech32HRPSegwit, witnessProg)
+	return newAddressWitnessScriptHash(net.Bech32HRPSegwit, 0, witnessProg)
+}
+
+// NewAddressWitnessTaproot returns a new AddressWitnessPubKeyHash v1.
+func NewAddressWitnessTaproot(witnessProg []byte, net *chaincfg.Params) (*AddressWitnessScriptHash, error) {
+	return newAddressWitnessScriptHash(net.Bech32HRPSegwit, 1, witnessProg)
 }
 
 // newAddressWitnessScriptHash is an internal helper function to create an
 // AddressWitnessScriptHash with a known human-readable part, rather than
 // looking it up through its parameters.
-func newAddressWitnessScriptHash(hrp string, witnessProg []byte) (*AddressWitnessScriptHash, error) {
+func newAddressWitnessScriptHash(hrp string, witnessVer byte, witnessProg []byte) (*AddressWitnessScriptHash, error) {
 	// Check for valid program length for witness version 0, which is 32
 	// for P2WSH.
 	if len(witnessProg) != 32 {
@@ -647,7 +657,7 @@ func newAddressWitnessScriptHash(hrp string, witnessProg []byte) (*AddressWitnes
 
 	addr := &AddressWitnessScriptHash{
 		hrp:            strings.ToLower(hrp),
-		witnessVersion: 0x00,
+		witnessVersion: witnessVer,
 	}
 
 	copy(addr.witnessProgram[:], witnessProg)

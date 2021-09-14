@@ -695,6 +695,29 @@ func TestAddresses(t *testing.T) {
 			net: &chaincfg.TestNet3Params,
 		},
 		{
+			name:    "segwit testnet taproot v1",
+			addr:    "tb1petwqkk8wnk4lgweyy4xvgxk0c7f572mrval39mwaxl34scex8zsqlpfgdd",
+			encoded: "tb1petwqkk8wnk4lgweyy4xvgxk0c7f572mrval39mwaxl34scex8zsqlpfgdd",
+			valid:   true,
+			result: btcutil.TstAddressWitnessScriptHash(
+				1,
+				[32]byte{
+					0xca, 0xdc, 0x0b, 0x58, 0xee, 0x9d, 0xab, 0xf4,
+					0x3b, 0x24, 0x25, 0x4c, 0xc4, 0x1a, 0xcf, 0xc7,
+					0x93, 0x4f, 0x2b, 0x63, 0x67, 0x7f, 0x12, 0xed,
+					0xdd, 0x37, 0xe3, 0x58, 0x63, 0x26, 0x38, 0xa0},
+				chaincfg.TestNet3Params.Bech32HRPSegwit),
+			f: func() (btcutil.Address, error) {
+				scriptHash := []byte{
+					0xca, 0xdc, 0x0b, 0x58, 0xee, 0x9d, 0xab, 0xf4,
+					0x3b, 0x24, 0x25, 0x4c, 0xc4, 0x1a, 0xcf, 0xc7,
+					0x93, 0x4f, 0x2b, 0x63, 0x67, 0x7f, 0x12, 0xed,
+					0xdd, 0x37, 0xe3, 0x58, 0x63, 0x26, 0x38, 0xa0}
+				return btcutil.NewAddressWitnessTaproot(scriptHash, &chaincfg.TestNet3Params)
+			},
+			net: &chaincfg.TestNet3Params,
+		},
+		{
 			name:    "segwit litecoin mainnet p2wpkh v0",
 			addr:    "LTC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KGMN4N9",
 			encoded: "ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kgmn4n9",
@@ -714,9 +737,9 @@ func TestAddresses(t *testing.T) {
 			},
 			net: &customParams,
 		},
-		// Unsupported witness versions (version 0 only supported at this point)
+		// Unsupported witness versions (version 0 and 1 only supported at this point)
 		{
-			name:  "segwit mainnet witness v1",
+			name:  "segwit mainnet witness v1 invalid length",
 			addr:  "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx",
 			valid: false,
 			net:   &chaincfg.MainNetParams,
