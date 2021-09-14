@@ -27,10 +27,10 @@ type CustomParamStruct struct {
 }
 
 var LitecoinParams = CustomParamStruct{
-	Net:              wire.BitcoinNet(01),
-	PubKeyHashAddrID: 0x30, // starts with L
-	ScriptHashAddrID: 0x32, // starts with M
-	Bech32HRPSegwit:  "ltc",
+	Net:              0xdbb6c0fb, // litecoin mainnet HD version bytes
+	PubKeyHashAddrID: 0x30,       // starts with L
+	ScriptHashAddrID: 0x32,       // starts with M
+	Bech32HRPSegwit:  "ltc",      // starts with ltc
 }
 
 // We use this function to be able to test functionality in DecodeAddress for
@@ -40,7 +40,6 @@ func applyCustomParams(params chaincfg.Params, newParams CustomParamStruct) chai
 	params.PubKeyHashAddrID = []byte{newParams.PubKeyHashAddrID}
 	params.ScriptHashAddrID = []byte{newParams.ScriptHashAddrID}
 	params.Bech32HRPSegwit = newParams.Bech32HRPSegwit
-	chaincfg.Register(&params)
 	return params
 }
 
@@ -95,6 +94,24 @@ func TestAddresses(t *testing.T) {
 				return btcutil.NewAddressPubKeyHash(pkHash, &chaincfg.MainNetParams)
 			},
 			net: &chaincfg.MainNetParams,
+		},
+		{
+			name:    "litecoin mainnet p2pkh",
+			addr:    "LM2WMpR1Rp6j3Sa59cMXMs1SPzj9eXpGc1",
+			encoded: "LM2WMpR1Rp6j3Sa59cMXMs1SPzj9eXpGc1",
+			valid:   true,
+			result: btcutil.TstAddressPubKeyHash(
+				[ripemd160.Size]byte{
+					0x13, 0xc6, 0x0d, 0x8e, 0x68, 0xd7, 0x34, 0x9f, 0x5b, 0x4c,
+					0xa3, 0x62, 0xc3, 0x95, 0x4b, 0x15, 0x04, 0x50, 0x61, 0xb1},
+				[]byte{LitecoinParams.PubKeyHashAddrID}),
+			f: func() (btcutil.Address, error) {
+				pkHash := []byte{
+					0x13, 0xc6, 0x0d, 0x8e, 0x68, 0xd7, 0x34, 0x9f, 0x5b, 0x4c,
+					0xa3, 0x62, 0xc3, 0x95, 0x4b, 0x15, 0x04, 0x50, 0x61, 0xb1}
+				return btcutil.NewAddressPubKeyHash(pkHash, &customParams)
+			},
+			net: &customParams,
 		},
 		{
 			name:    "testnet p2pkh",
@@ -230,6 +247,24 @@ func TestAddresses(t *testing.T) {
 				return btcutil.NewAddressScriptHash(script, &chaincfg.MainNetParams)
 			},
 			net: &chaincfg.MainNetParams,
+		},
+		{
+			name:    "litecoin mainnet P2SH ",
+			addr:    "MVcg9uEvtWuP5N6V48EHfEtbz48qR8TKZ9",
+			encoded: "MVcg9uEvtWuP5N6V48EHfEtbz48qR8TKZ9",
+			valid:   true,
+			result: btcutil.TstAddressScriptHash(
+				[ripemd160.Size]byte{
+					0xee, 0x34, 0xac, 0x67, 0x6b, 0xda, 0xf6, 0xe3, 0x70, 0xc8,
+					0xc8, 0x20, 0xb9, 0x48, 0xed, 0xfa, 0xd3, 0xa8, 0x73, 0xd8},
+				[]byte{LitecoinParams.ScriptHashAddrID}),
+			f: func() (btcutil.Address, error) {
+				pkHash := []byte{
+					0xEE, 0x34, 0xAC, 0x67, 0x6B, 0xDA, 0xF6, 0xE3, 0x70, 0xC8,
+					0xC8, 0x20, 0xB9, 0x48, 0xED, 0xFA, 0xD3, 0xA8, 0x73, 0xD8}
+				return btcutil.NewAddressScriptHashFromHash(pkHash, &customParams)
+			},
+			net: &customParams,
 		},
 		{
 			// Taken from transactions:
@@ -660,20 +695,21 @@ func TestAddresses(t *testing.T) {
 			net: &chaincfg.TestNet3Params,
 		},
 		{
-			name:    "litecoin p2wpkh v0",
-			addr:    "ltc1qt6nzjwaqp3nknu5h6xmh58679cjsyqj4gzf8w2",
-			encoded: "ltc1qt6nzjwaqp3nknu5h6xmh58679cjsyqj4gzf8w2",
+			name:    "segwit litecoin mainnet p2wpkh v0",
+			addr:    "LTC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KGMN4N9",
+			encoded: "ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kgmn4n9",
 			valid:   true,
 			result: btcutil.TstAddressWitnessPubKeyHash(
 				0,
 				[20]byte{
-					0x5e, 0xa6, 0x29, 0x3b, 0xa0, 0x0c, 0x67, 0x69, 0xf2, 0x97,
-					0xd1, 0xb7, 0x7a, 0x1f, 0x5e, 0x2e, 0x25, 0x02, 0x02, 0x55},
-				customParams.Bech32HRPSegwit),
+					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4, 0x54, 0x94,
+					0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23, 0xf1, 0x43, 0x3b, 0xd6},
+				LitecoinParams.Bech32HRPSegwit,
+			),
 			f: func() (btcutil.Address, error) {
 				pkHash := []byte{
-					0x5e, 0xa6, 0x29, 0x3b, 0xa0, 0x0c, 0x67, 0x69, 0xf2, 0x97,
-					0xd1, 0xb7, 0x7a, 0x1f, 0x5e, 0x2e, 0x25, 0x02, 0x02, 0x55}
+					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4, 0x54, 0x94,
+					0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23, 0xf1, 0x43, 0x3b, 0xd6}
 				return btcutil.NewAddressWitnessPubKeyHash(pkHash, &customParams)
 			},
 			net: &customParams,
@@ -752,6 +788,10 @@ func TestAddresses(t *testing.T) {
 			valid: false,
 			net:   &chaincfg.TestNet3Params,
 		},
+	}
+
+	if err := chaincfg.Register(&customParams); err != nil {
+		panic(err)
 	}
 
 	for _, test := range tests {
@@ -877,6 +917,14 @@ func TestAddresses(t *testing.T) {
 				t.Errorf("%v: calculated network does not match expected",
 					test.name)
 				return
+			}
+		} else {
+			// If there is an error, make sure we can print it
+			// correctly.
+			errStr := err.Error()
+			if errStr == "" {
+				t.Errorf("%v: error was non-nil but message is"+
+					"empty: %v", test.name, err)
 			}
 		}
 

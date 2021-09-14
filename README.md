@@ -1,10 +1,9 @@
 btcutil
 =======
 
-[![Build Status](http://img.shields.io/travis/martinboehm/btcutil.svg)](https://travis-ci.org/martinboehm/btcutil)
-[![Coverage Status](http://img.shields.io/coveralls/martinboehm/btcutil.svg)](https://coveralls.io/r/martinboehm/btcutil?branch=master)
-[![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/martinboehm/btcutil)
+[![Build Status](https://github.com/martinboehm/btcutil/workflows/Build%20and%20Test/badge.svg)](https://github.com/martinboehm/btcutil/actions)
+[![ISC License](https://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/martinboehm/btcutil)
 
 Package btcutil provides bitcoin-specific convenience functions and types.
 A comprehensive suite of tests is provided to ensure proper functionality.  See

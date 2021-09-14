@@ -10,6 +10,7 @@ package hdkeychain
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"math"
@@ -228,7 +229,7 @@ tests:
 
 		for _, childNum := range test.path {
 			var err error
-			extKey, err = extKey.Child(childNum)
+			extKey, err = extKey.Derive(childNum)
 			if err != nil {
 				t.Errorf("err: %v", err)
 				continue tests
@@ -385,7 +386,7 @@ tests:
 
 		for _, childNum := range test.path {
 			var err error
-			extKey, err = extKey.Child(childNum)
+			extKey, err = extKey.Derive(childNum)
 			if err != nil {
 				t.Errorf("err: %v", err)
 				continue tests
@@ -394,7 +395,7 @@ tests:
 
 		privStr := extKey.String()
 		if privStr != test.wantPriv {
-			t.Errorf("Child #%d (%s): mismatched serialized "+
+			t.Errorf("Derive #%d (%s): mismatched serialized "+
 				"private extended key -- got: %s, want: %s", i,
 				test.name, privStr, test.wantPriv)
 			continue
@@ -633,7 +634,7 @@ tests:
 
 		for _, childNum := range test.path {
 			var err error
-			extKey, err = extKey.Child(childNum)
+			extKey, err = extKey.Derive(childNum)
 			if err != nil {
 				t.Errorf("err: %v", err)
 				continue tests
@@ -642,7 +643,7 @@ tests:
 
 		pubStr := extKey.String()
 		if pubStr != test.wantPub {
-			t.Errorf("Child #%d (%s): mismatched serialized "+
+			t.Errorf("Derive #%d (%s): mismatched serialized "+
 				"public extended key -- got: %s, want: %s", i,
 				test.name, pubStr, test.wantPub)
 			continue
@@ -650,8 +651,8 @@ tests:
 	}
 }
 
-// TestGenenerateSeed ensures the GenerateSeed function works as intended.
-func TestGenenerateSeed(t *testing.T) {
+// TestGenerateSeed ensures the GenerateSeed function works as intended.
+func TestGenerateSeed(t *testing.T) {
 	wantErr := errors.New("seed length must be between 128 and 512 bits")
 
 	tests := []struct {
@@ -695,6 +696,8 @@ func TestExtendedKeyAPI(t *testing.T) {
 		extKey     string
 		isPrivate  bool
 		parentFP   uint32
+		chainCode  []byte
+		childNum   uint32
 		privKey    string
 		privKeyErr error
 		pubKey     string
@@ -705,6 +708,8 @@ func TestExtendedKeyAPI(t *testing.T) {
 			extKey:    "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
 			isPrivate: true,
 			parentFP:  0,
+			chainCode: []byte{135, 61, 255, 129, 192, 47, 82, 86, 35, 253, 31, 229, 22, 126, 172, 58, 85, 160, 73, 222, 61, 49, 75, 180, 46, 226, 39, 255, 237, 55, 213, 8},
+			childNum:  0,
 			privKey:   "e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35",
 			pubKey:    "0339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2",
 			address:   "15mKKb2eos1hWa6tisdPwwDC1a5J1y9nma",
@@ -714,6 +719,8 @@ func TestExtendedKeyAPI(t *testing.T) {
 			extKey:     "xpub6D4BDPcP2GT577Vvch3R8wDkScZWzQzMMUm3PWbmWvVJrZwQY4VUNgqFJPMM3No2dFDFGTsxxpG5uJh7n7epu4trkrX7x7DogT5Uv6fcLW5",
 			isPrivate:  false,
 			parentFP:   3203769081,
+			chainCode:  []byte{4, 70, 107, 156, 200, 225, 97, 233, 102, 64, 156, 165, 41, 134, 197, 132, 240, 126, 157, 200, 31, 115, 93, 182, 131, 195, 255, 110, 199, 177, 80, 63},
+			childNum:   2147483650,
 			privKeyErr: ErrNotPrivExtKey,
 			pubKey:     "0357bfe1e341d01c69fe5654309956cbea516822fba8a601743a012a7896ee8dc2",
 			address:    "1NjxqbA9aZWnh17q1UW3rB4EPu79wDXj7x",
@@ -740,6 +747,20 @@ func TestExtendedKeyAPI(t *testing.T) {
 			t.Errorf("ParentFingerprint #%d (%s): mismatched "+
 				"parent fingerprint -- want %d, got %d", i,
 				test.name, test.parentFP, parentFP)
+			continue
+		}
+
+		chainCode := key.ChainCode()
+		if !bytes.Equal(chainCode, test.chainCode) {
+			t.Errorf("ChainCode #%d (%s): want %v, got %v", i,
+				test.name, test.chainCode, chainCode)
+			continue
+		}
+
+		childIndex := key.ChildIndex()
+		if childIndex != test.childNum {
+			t.Errorf("ChildIndex #%d (%s): want %d, got %d", i,
+				test.name, test.childNum, childIndex)
 			continue
 		}
 
@@ -969,9 +990,9 @@ func TestErrors(t *testing.T) {
 	}
 
 	// Deriving a hardened child extended key should fail from a public key.
-	_, err = pubKey.Child(HardenedKeyStart)
+	_, err = pubKey.Derive(HardenedKeyStart)
 	if err != ErrDeriveHardFromPublic {
-		t.Fatalf("Child: mismatched error -- got: %v, want: %v",
+		t.Fatalf("Derive: mismatched error -- got: %v, want: %v",
 			err, ErrDeriveHardFromPublic)
 	}
 
@@ -1194,19 +1215,137 @@ func TestMaximumDepth(t *testing.T) {
 			t.Fatalf("extendedkey depth %d should match expected value %d",
 				extKey.Depth(), i)
 		}
-		newKey, err := extKey.Child(1)
+		newKey, err := extKey.Derive(1)
 		if err != nil {
-			t.Fatalf("Child: unexpected error: %v", err)
+			t.Fatalf("Derive: unexpected error: %v", err)
 		}
 		extKey = newKey
 	}
 
-	noKey, err := extKey.Child(1)
+	noKey, err := extKey.Derive(1)
 	if err != ErrDeriveBeyondMaxDepth {
-		t.Fatalf("Child: mismatched error: want %v, got %v",
+		t.Fatalf("Derive: mismatched error: want %v, got %v",
 			ErrDeriveBeyondMaxDepth, err)
 	}
 	if noKey != nil {
-		t.Fatal("Child: deriving 256th key should not succeed")
+		t.Fatal("Derive: deriving 256th key should not succeed")
+	}
+}
+
+// TestCloneWithVersion ensures proper conversion between standard and SLIP132
+// extended keys.
+//
+// The following tool was used for generating the tests:
+//   https://jlopp.github.io/xpub-converter
+func TestCloneWithVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     string
+		version []byte
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "test xpub to zpub",
+			key:     "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
+			version: []byte{0x04, 0xb2, 0x47, 0x46},
+			want:    "zpub6jftahH18ngZxUuv6oSniLNrBCSSE1B4EEU59bwTCEt8x6aS6b2mdfLxbS4QS53g85SWWP6wexqeer516433gYpZQoJie2tcMYdJ1SYYYAL",
+		},
+		{
+			name:    "test zpub to xpub",
+			key:     "zpub6jftahH18ngZxUuv6oSniLNrBCSSE1B4EEU59bwTCEt8x6aS6b2mdfLxbS4QS53g85SWWP6wexqeer516433gYpZQoJie2tcMYdJ1SYYYAL",
+			version: []byte{0x04, 0x88, 0xb2, 0x1e},
+			want:    "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
+		},
+		{
+			name:    "test xprv to zprv",
+			key:     "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
+			version: []byte{0x04, 0xb2, 0x43, 0x0c},
+			want:    "zprvAWgYBBk7JR8GjzqSzmunMCS7dAbwpYTCs1YUMDXqduMA5JFHZ3iX5s2UkAR6vBdcCYYa1S5o1fVLrKsrnpCQ4WpUd6aVUWP1bS2Yy5DoaKv",
+		},
+		{
+			name:    "test zprv to xprv",
+			key:     "zprvAWgYBBk7JR8GjzqSzmunMCS7dAbwpYTCs1YUMDXqduMA5JFHZ3iX5s2UkAR6vBdcCYYa1S5o1fVLrKsrnpCQ4WpUd6aVUWP1bS2Yy5DoaKv",
+			version: []byte{0x04, 0x88, 0xad, 0xe4},
+			want:    "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
+		},
+		{
+			name:    "test invalid key id",
+			key:     "zprvAWgYBBk7JR8GjzqSzmunMCS7dAbwpYTCs1YUMDXqduMA5JFHZ3iX5s2UkAR6vBdcCYYa1S5o1fVLrKsrnpCQ4WpUd6aVUWP1bS2Yy5DoaKv",
+			version: []byte{0x4B, 0x1D},
+			wantErr: chaincfg.ErrUnknownHDKeyID,
+		},
+	}
+
+	for i, test := range tests {
+		extKey, err := NewKeyFromString(test.key, base58.Sha256D)
+		if err != nil {
+			panic(err) // This is never expected to fail.
+		}
+
+		got, err := extKey.CloneWithVersion(test.version)
+		if !reflect.DeepEqual(err, test.wantErr) {
+			t.Errorf("CloneWithVersion #%d (%s): unexpected error -- "+
+				"want %v, got %v", i, test.name, test.wantErr, err)
+			continue
+		}
+
+		if test.wantErr == nil {
+			if k := got.String(); k != test.want {
+				t.Errorf("CloneWithVersion #%d (%s): "+
+					"got %s, want %s", i, test.name, k, test.want)
+				continue
+			}
+		}
+	}
+}
+
+// TestLeadingZero ensures that deriving children from keys with a leading zero byte is done according
+// to the BIP-32 standard and that the legacy method generates a backwards-compatible result.
+func TestLeadingZero(t *testing.T) {
+	// The 400th seed results in a m/0' public key with a leading zero, allowing us to test
+	// the desired behavior.
+	ii := 399
+	seed := make([]byte, 32)
+	binary.BigEndian.PutUint32(seed[28:], uint32(ii))
+	masterKey, err := NewMaster(seed, &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatalf("hdkeychain.NewMaster failed: %v", err)
+	}
+	child0, err := masterKey.Derive(0 + HardenedKeyStart)
+	if err != nil {
+		t.Fatalf("masterKey.Derive failed: %v", err)
+	}
+	if !child0.IsAffectedByIssue172() {
+		t.Fatal("expected child0 to be affected by issue 172")
+	}
+	child1, err := child0.Derive(0 + HardenedKeyStart)
+	if err != nil {
+		t.Fatalf("child0.Derive failed: %v", err)
+	}
+	if child1.IsAffectedByIssue172() {
+		t.Fatal("did not expect child1 to be affected by issue 172")
+	}
+
+	child1nonstandard, err := child0.DeriveNonStandard(0 + HardenedKeyStart)
+	if err != nil {
+		t.Fatalf("child0.DeriveNonStandard failed: %v", err)
+	}
+
+	// This is the correct result based on BIP32
+	if hex.EncodeToString(child1.key) != "a9b6b30a5b90b56ed48728c73af1d8a7ef1e9cc372ec21afcc1d9bdf269b0988" {
+		t.Error("incorrect standard BIP32 derivation")
+	}
+
+	if hex.EncodeToString(child1nonstandard.key) != "ea46d8f58eb863a2d371a938396af8b0babe85c01920f59a8044412e70e837ee" {
+		t.Error("incorrect btcutil backwards compatible BIP32-like derivation")
+	}
+
+	if !child0.IsAffectedByIssue172() {
+		t.Error("child 0 should be affected by issue 172")
+	}
+
+	if child1.IsAffectedByIssue172() {
+		t.Error("child 1 should not be affected by issue 172")
 	}
 }

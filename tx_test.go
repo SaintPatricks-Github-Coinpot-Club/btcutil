@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
 	"github.com/martinboehm/btcutil"
-	"github.com/davecgh/go-spew/spew"
 )
 
 // TestTx tests the API for Tx.
@@ -93,5 +93,44 @@ func TestTxErrors(t *testing.T) {
 	if err != io.EOF {
 		t.Errorf("NewTxFromBytes: did not get expected error - "+
 			"got %v, want %v", err, io.EOF)
+	}
+}
+
+// TestTxHasWitness tests the HasWitness() method.
+func TestTxHasWitness(t *testing.T) {
+	msgTx := Block100000.Transactions[0] // contains witness data
+	tx := btcutil.NewTx(msgTx)
+
+	tx.WitnessHash() // Populate the witness hash cache
+	tx.HasWitness()  // Should not fail (see martinboehm/btcd#1543)
+
+	if !tx.HasWitness() {
+		t.Errorf("HasWitness: got false, want true")
+	}
+
+	for _, msgTxWithoutWitness := range Block100000.Transactions[1:] {
+		txWithoutWitness := btcutil.NewTx(msgTxWithoutWitness)
+		if txWithoutWitness.HasWitness() {
+			t.Errorf("HasWitness: got false, want true")
+		}
+	}
+}
+
+// TestTxWitnessHash tests the WitnessHash() method.
+func TestTxWitnessHash(t *testing.T) {
+	msgTx := Block100000.Transactions[0] // contains witness data
+	tx := btcutil.NewTx(msgTx)
+
+	if tx.WitnessHash().IsEqual(tx.Hash()) {
+		t.Errorf("WitnessHash: witness hash and tx id must NOT be same - "+
+			"got %v, want %v", tx.WitnessHash(), tx.Hash())
+	}
+
+	for _, msgTxWithoutWitness := range Block100000.Transactions[1:] {
+		txWithoutWitness := btcutil.NewTx(msgTxWithoutWitness)
+		if !txWithoutWitness.WitnessHash().IsEqual(txWithoutWitness.Hash()) {
+			t.Errorf("WitnessHash: witness hash and tx id must be same - "+
+				"got %v, want %v", txWithoutWitness.WitnessHash(), txWithoutWitness.Hash())
+		}
 	}
 }

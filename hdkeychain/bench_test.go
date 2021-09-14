@@ -27,7 +27,7 @@ func BenchmarkDeriveHardened(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		masterKey.Child(hdkeychain.HardenedKeyStart)
+		masterKey.Derive(hdkeychain.HardenedKeyStart)
 	}
 }
 
@@ -42,7 +42,7 @@ func BenchmarkDeriveNormal(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		masterKey.Child(0)
+		masterKey.Derive(0)
 	}
 }
 

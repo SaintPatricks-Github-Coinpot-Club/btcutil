@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/martinboehm/btcd/wire"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/martinboehm/btcd/wire"
 	"github.com/martinboehm/btcutil/chaincfg"
 )
 
