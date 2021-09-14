@@ -2,7 +2,7 @@
 # The script does automatic checking on a Go package and its sub-packages, including:
 # 1. gofmt         (http://golang.org/cmd/gofmt/)
 # 2. goimports     (https://github.com/bradfitz/goimports)
-# 3. golint        (https://github.com/golang/lint)
+# 3. revive        (https://revive.run/)
 # 4. go vet        (http://golang.org/cmd/vet)
 # 5. gosimple      (https://github.com/dominikh/go-simple)
 # 6. unconvert     (https://github.com/mdempsky/unconvert)
@@ -38,7 +38,7 @@ for i in $(find . -name go.mod -type f -print); do
     golangci-lint run --deadline=10m --disable-all \
       --enable=gofmt \
       --enable=goimports \
-      --enable=golint \
+      --enable=revive \
       --enable=govet \
       --enable=gosimple \
       --enable=unconvert

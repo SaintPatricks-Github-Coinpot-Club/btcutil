@@ -1,6 +1,6 @@
 module github.com/martinboehm/btcutil
 
-go 1.16
+go 1.17
 
 require (
 	github.com/Groestlcoin/go-groestl-hash v0.0.0-20181012171753-790653ac190c

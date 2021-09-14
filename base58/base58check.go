@@ -7,6 +7,7 @@ package base58
 import (
 	"crypto/sha256"
 	"errors"
+
 	"github.com/Groestlcoin/go-groestl-hash/groestl"
 	"github.com/dchest/blake256"
 )

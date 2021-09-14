@@ -30,6 +30,8 @@ type opcode struct {
 	opfunc func(*parsedOpcode, *Engine) error
 }
 
+//revive:disable:var-naming
+
 // These constants are the values of the official opcodes used on the btc wiki,
 // in bitcoin core and in most if not all other references and software related
 // to handling BTC scripts.
@@ -295,6 +297,8 @@ const (
 	OP_PUBKEY              = 0xfe // 254 - bitcoin core internal
 	OP_INVALIDOPCODE       = 0xff // 255 - bitcoin core internal
 )
+
+//revive:enable:var-naming
 
 // Conditional execution constants.
 const (
