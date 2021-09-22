@@ -57,6 +57,7 @@ const (
 	ScriptHashTy                             // Pay to script hash.
 	WitnessV0ScriptHashTy                    // Pay to witness script hash.
 	WitnessV1TaprootTy                       // Witness v1 taproot
+	WitnessUnknownTy                         // Unknown witness
 	MultiSigTy                               // Multi signature.
 	NullDataTy                               // Empty data-only (provably prunable).
 )
@@ -71,6 +72,7 @@ var scriptClassToName = []string{
 	ScriptHashTy:          "scripthash",
 	WitnessV0ScriptHashTy: "witness_v0_scripthash",
 	WitnessV1TaprootTy:    "witness_v1_taproot",
+	WitnessUnknownTy:      "witness_unknown",
 	MultiSigTy:            "multisig",
 	NullDataTy:            "nulldata",
 }
@@ -177,6 +179,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return MultiSigTy
 	} else if isNullData(pops) {
 		return NullDataTy
+	} else if isWitnessProgram(pops) {
+		return WitnessUnknownTy
 	}
 	return NonStandardTy
 }
@@ -423,6 +427,18 @@ func payToWitnessScriptHashScript(scriptHash []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_0).AddData(scriptHash).Script()
 }
 
+// payToWitnessTaproot creates a new script to pay to a taproot version 1
+// witness program. The passed hash is expected to be valid.
+func payToWitnessTaproot(scriptHash []byte) ([]byte, error) {
+	return NewScriptBuilder().AddOp(OP_1).AddData(scriptHash).Script()
+}
+
+// payToWitnessUnknown creates a new script to pay to a unknown
+// witness program. The passed hash is expected to be valid.
+func payToWitnessUnknown(scriptHash []byte, witnessVer byte) ([]byte, error) {
+	return NewScriptBuilder().AddOp(OP_RESERVED + witnessVer).AddData(scriptHash).Script()
+}
+
 // payToPubkeyScript creates a new script to pay a transaction output to a
 // public key. It is expected that the input is a valid pubkey.
 func payToPubKeyScript(serializedPubKey []byte) ([]byte, error) {
@@ -469,6 +485,18 @@ func PayToAddrScript(addr btcutil.Address) ([]byte, error) {
 				nilAddrErrStr)
 		}
 		return payToWitnessScriptHashScript(addr.ScriptAddress())
+	case *btcutil.AddressWitnessTaproot:
+		if addr == nil {
+			return nil, scriptError(ErrUnsupportedAddress,
+				nilAddrErrStr)
+		}
+		return payToWitnessTaproot(addr.ScriptAddress())
+	case *btcutil.AddressWitnessUnknown:
+		if addr == nil {
+			return nil, scriptError(ErrUnsupportedAddress,
+				nilAddrErrStr)
+		}
+		return payToWitnessUnknown(addr.ScriptAddress(), addr.WitnessVersion())
 	}
 
 	str := fmt.Sprintf("unable to generate payment script for unsupported "+
@@ -607,12 +635,19 @@ func ExtractPkScriptAddrs(pkScript []byte, chainParams *chaincfg.Params) (Script
 		}
 
 	case WitnessV1TaprootTy:
-		// A pay-to-witness-script-hash script is of the form:
-		//  OP_1 <32-byte hash>
-		// Therefore, the script hash is the second item on the stack.
-		// Skip the script hash if it's invalid for some reason.
 		requiredSigs = 1
 		addr, err := btcutil.NewAddressWitnessTaproot(pops[1].data,
+			chainParams)
+		if err == nil {
+			addrs = append(addrs, addr)
+		}
+
+	case WitnessUnknownTy:
+		var witnessVer byte
+		if pops[0].opcode.value != OP_0 {
+			witnessVer = pops[0].opcode.value - OP_RESERVED
+		}
+		addr, err := btcutil.NewAddressWitnessUnknown(witnessVer, pops[1].data,
 			chainParams)
 		if err == nil {
 			addrs = append(addrs, addr)

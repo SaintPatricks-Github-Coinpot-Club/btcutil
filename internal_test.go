@@ -77,6 +77,28 @@ func TstAddressWitnessScriptHash(version byte, program [32]byte,
 	}
 }
 
+// TstAddressWitnessTaproot creates an AddressWitnessTaproot, initiating
+// the fields as given.
+func TstAddressWitnessTaproot(version byte, program [32]byte, hrp string) *AddressWitnessTaproot {
+
+	addr := AddressWitnessTaproot{}
+	addr.hrp = hrp
+	addr.witnessVersion = version
+	addr.witnessProgram = program
+	return &addr
+}
+
+// TstAddressWitnessUnknown creates an AddressWitnessUnknown, initiating
+// the fields as given.
+func TstAddressWitnessUnknown(version byte, program []byte, hrp string) *AddressWitnessUnknown {
+
+	return &AddressWitnessUnknown{
+		hrp:            hrp,
+		witnessVersion: version,
+		witnessProgram: program,
+	}
+}
+
 // TstAddressPubKey makes an AddressPubKey, setting the unexported fields with
 // the parameters.
 func TstAddressPubKey(serializedPubKey []byte, pubKeyFormat PubKeyFormat,

@@ -653,6 +653,24 @@ func TestPayToAddrScript(t *testing.T) {
 			err)
 	}
 
+	// bc1qxnu3zxxcn09pk6pmufrht0wt7dcfgmj4s8de7c
+	witnessV0KeyhashMain, err := btcutil.NewAddressWitnessPubKeyHash(hexToBytes("34f91118d89bca1b683be24775bdcbf370946e55"), &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatalf("Unable to create witnessV0KeyhashMain: %v", err)
+	}
+
+	// tb1pudtv2r5xjaqwag3d40u56t9jcy46d8xx6qzpsvt7xd2umnt6yhdqmtc693
+	witnessV1TaprootMain, err := btcutil.NewAddressWitnessTaproot(hexToBytes("e356c50e869740eea22dabf94d2cb2c12ba69cc6d00418317e3355cdcd7a25da"), &chaincfg.TestNet3Params)
+	if err != nil {
+		t.Fatalf("Unable to create witnessV1TaprootMain: %v", err)
+	}
+
+	// bc1sw50qgdz25j
+	witnessUnknownMain, err := btcutil.NewAddressWitnessUnknown(16, hexToBytes("751e"), &chaincfg.MainNetParams)
+	if err != nil {
+		t.Fatalf("Unable to create witnessUnknownMain: %v", err)
+	}
+
 	// Errors used in the tests below defined here for convenience and to
 	// keep the horizontal test size shorter.
 	errUnsupportedAddress := scriptError(ErrUnsupportedAddress, "")
@@ -697,6 +715,24 @@ func TestPayToAddrScript(t *testing.T) {
 				"97b1482ecad7b148a6909a5cb2e0eaddfb84ccf97444" +
 				"64f82e160bfa9b8b64f9d4c03f999b8643f656b412a3 " +
 				"CHECKSIG",
+			nil,
+		},
+		// witnessV0KeyhashMain.
+		{
+			witnessV0KeyhashMain,
+			"OP_0 DATA_20 0x34f91118d89bca1b683be24775bdcbf370946e55",
+			nil,
+		},
+		// witnessV1TaprootMain.
+		{
+			witnessV1TaprootMain,
+			"OP_1 DATA_32 0xe356c50e869740eea22dabf94d2cb2c12ba69cc6d00418317e3355cdcd7a25da",
+			nil,
+		},
+		// witnessUnknownMain.
+		{
+			witnessUnknownMain,
+			"OP_16 DATA_2 0x751e",
 			nil,
 		},
 
@@ -1126,9 +1162,14 @@ func TestStringifyClass(t *testing.T) {
 			stringed: "witness_v0_scripthash",
 		},
 		{
-			name:     "witnessstaproot",
+			name:     "witnesstaproot",
 			class:    WitnessV1TaprootTy,
 			stringed: "witness_v1_taproot",
+		},
+		{
+			name:     "witnessunknown",
+			class:    WitnessUnknownTy,
+			stringed: "witness_unknown",
 		},
 		{
 			name:     "multisigty",

@@ -699,7 +699,7 @@ func TestAddresses(t *testing.T) {
 			addr:    "tb1petwqkk8wnk4lgweyy4xvgxk0c7f572mrval39mwaxl34scex8zsqlpfgdd",
 			encoded: "tb1petwqkk8wnk4lgweyy4xvgxk0c7f572mrval39mwaxl34scex8zsqlpfgdd",
 			valid:   true,
-			result: btcutil.TstAddressWitnessScriptHash(
+			result: btcutil.TstAddressWitnessTaproot(
 				1,
 				[32]byte{
 					0xca, 0xdc, 0x0b, 0x58, 0xee, 0x9d, 0xab, 0xf4,
@@ -737,24 +737,62 @@ func TestAddresses(t *testing.T) {
 			},
 			net: &customParams,
 		},
-		// Unsupported witness versions (version 0 and 1 only supported at this point)
 		{
-			name:  "segwit mainnet witness v1 invalid length",
-			addr:  "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
+			name:    "segwit mainnet witness_unknown v1",
+			addr:    "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y",
+			encoded: "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y",
+			valid:   true,
+			result: btcutil.TstAddressWitnessUnknown(
+				1,
+				[]byte{
+					0xca, 0xdc, 0x0b, 0x58, 0xee, 0x9d, 0xab, 0xf4,
+					0x3b, 0x24, 0x25, 0x4c, 0xc4, 0x1a, 0xcf, 0xc7,
+					0x93, 0x4f, 0x2b, 0x63, 0x67, 0x7f, 0x12, 0xed,
+					0xdd, 0x37, 0xe3, 0x58, 0x63, 0x26, 0x38, 0xa0},
+				chaincfg.TestNet3Params.Bech32HRPSegwit),
+			f: func() (btcutil.Address, error) {
+				scriptHash := []byte{
+					0xca, 0xdc, 0x0b, 0x58, 0xee, 0x9d, 0xab, 0xf4,
+					0x3b, 0x24, 0x25, 0x4c, 0xc4, 0x1a, 0xcf, 0xc7,
+					0x93, 0x4f, 0x2b, 0x63, 0x67, 0x7f, 0x12, 0xed,
+					0xdd, 0x37, 0xe3, 0x58, 0x63, 0x26, 0x38, 0xa0}
+				return btcutil.NewAddressWitnessUnknown(1, scriptHash, &chaincfg.TestNet3Params)
+			},
+			net: &chaincfg.MainNetParams,
 		},
 		{
-			name:  "segwit mainnet witness v16",
-			addr:  "BC1SW50QA3JX3S",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
+			name:    "segwit mainnet witness_unknown v16",
+			addr:    "bc1sw50qgdz25j",
+			encoded: "bc1sw50qgdz25j",
+			valid:   true,
+			result: btcutil.TstAddressWitnessUnknown(
+				16,
+				[]byte{0x75, 0x1e},
+				chaincfg.TestNet3Params.Bech32HRPSegwit),
+			f: func() (btcutil.Address, error) {
+				scriptHash := []byte{0x75, 0x1e}
+				return btcutil.NewAddressWitnessUnknown(16, scriptHash, &chaincfg.TestNet3Params)
+			},
+			net: &chaincfg.MainNetParams,
 		},
 		{
-			name:  "segwit mainnet witness v2",
-			addr:  "bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj",
-			valid: false,
-			net:   &chaincfg.MainNetParams,
+			name:    "segwit mainnet witness_unknown v2",
+			addr:    "bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs",
+			encoded: "bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs",
+			valid:   true,
+			result: btcutil.TstAddressWitnessUnknown(
+				2,
+				[]byte{
+					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4,
+					0x54, 0x94, 0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23},
+				chaincfg.TestNet3Params.Bech32HRPSegwit),
+			f: func() (btcutil.Address, error) {
+				scriptHash := []byte{
+					0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4,
+					0x54, 0x94, 0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23}
+				return btcutil.NewAddressWitnessUnknown(2, scriptHash, &chaincfg.TestNet3Params)
+			},
+			net: &chaincfg.MainNetParams,
 		},
 		// Invalid segwit addresses
 		{
@@ -870,6 +908,10 @@ func TestAddresses(t *testing.T) {
 				saddr = btcutil.TstAddressSegwitSAddr(encoded)
 			case *btcutil.AddressWitnessScriptHash:
 				saddr = btcutil.TstAddressSegwitSAddr(encoded)
+			case *btcutil.AddressWitnessTaproot:
+				saddr = btcutil.TstAddressSegwitSAddr(encoded)
+			case *btcutil.AddressWitnessUnknown:
+				saddr = btcutil.TstAddressSegwitSAddr(encoded)
 			}
 
 			// Check script address, as well as the Hash160 method for P2PKH and
@@ -922,6 +964,46 @@ func TestAddresses(t *testing.T) {
 				}
 
 				expVer := test.result.(*btcutil.AddressWitnessScriptHash).WitnessVersion()
+				if v := a.WitnessVersion(); v != expVer {
+					t.Errorf("%v: witness versions do not match:\n%x != \n%x",
+						test.name, expVer, v)
+					return
+				}
+
+				if p := a.WitnessProgram(); !bytes.Equal(saddr, p) {
+					t.Errorf("%v: witness programs do not match:\n%x != \n%x",
+						test.name, saddr, p)
+					return
+				}
+
+			case *btcutil.AddressWitnessTaproot:
+				if hrp := a.Hrp(); test.net.Bech32HRPSegwit != hrp {
+					t.Errorf("%v: hrps do not match:\n%x != \n%x",
+						test.name, test.net.Bech32HRPSegwit, hrp)
+					return
+				}
+
+				expVer := test.result.(*btcutil.AddressWitnessTaproot).WitnessVersion()
+				if v := a.WitnessVersion(); v != expVer {
+					t.Errorf("%v: witness versions do not match:\n%x != \n%x",
+						test.name, expVer, v)
+					return
+				}
+
+				if p := a.WitnessProgram(); !bytes.Equal(saddr, p) {
+					t.Errorf("%v: witness programs do not match:\n%x != \n%x",
+						test.name, saddr, p)
+					return
+				}
+
+			case *btcutil.AddressWitnessUnknown:
+				if hrp := a.Hrp(); test.net.Bech32HRPSegwit != hrp {
+					t.Errorf("%v: hrps do not match:\n%x != \n%x",
+						test.name, test.net.Bech32HRPSegwit, hrp)
+					return
+				}
+
+				expVer := test.result.(*btcutil.AddressWitnessUnknown).WitnessVersion()
 				if v := a.WitnessVersion(); v != expVer {
 					t.Errorf("%v: witness versions do not match:\n%x != \n%x",
 						test.name, expVer, v)

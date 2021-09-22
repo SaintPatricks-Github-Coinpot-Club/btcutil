@@ -90,15 +90,15 @@ func encodeSegWitAddress(hrp string, witnessVersion byte, witnessProgram []byte)
 		return "", err
 	}
 
-	// Check validity by decoding the created address.
-	version, program, err := decodeSegWitAddress(bech)
-	if err != nil {
-		return "", fmt.Errorf("invalid segwit address: %v", err)
-	}
+	// // Check validity by decoding the created address.
+	// version, program, err := decodeSegWitAddress(bech)
+	// if err != nil {
+	// 	return "", fmt.Errorf("invalid segwit address: %v", err)
+	// }
 
-	if version != witnessVersion || !bytes.Equal(program, witnessProgram) {
-		return "", fmt.Errorf("invalid segwit address")
-	}
+	// if version != witnessVersion || !bytes.Equal(program, witnessProgram) {
+	// 	return "", fmt.Errorf("invalid segwit address")
+	// }
 
 	return bech, nil
 }
@@ -155,23 +155,26 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 			// legacy addresses. In this case decodeSegWitAddress returns error
 			// and we proceed to try decoding as a legacy address below.
 			if err == nil {
-				// We currently only support P2WPKH and P2WSH, which is
-				// witness version 0 and taproot version 1.
-				if witnessVer > 1 {
+				if witnessVer > 16 {
 					return nil, UnsupportedWitnessVerError(witnessVer)
 				}
 
 				// The HRP is everything before the found '1'.
 				hrp := prefix[:len(prefix)-1]
 
-				switch len(witnessProg) {
-				case 20:
-					return newAddressWitnessPubKeyHash(hrp, witnessProg)
-				case 32:
-					return newAddressWitnessScriptHash(hrp, witnessVer, witnessProg)
-				default:
-					return nil, UnsupportedWitnessProgLenError(len(witnessProg))
+				if witnessVer == 0 {
+					switch len(witnessProg) {
+					case 20:
+						return newAddressWitnessPubKeyHash(hrp, witnessProg)
+					case 32:
+						return newAddressWitnessScriptHash(hrp, witnessProg)
+					default:
+						return newAddressWitnessUnknown(hrp, witnessVer, witnessProg)
+					}
+				} else if witnessVer == 1 && len(witnessProg) == 32 {
+					return newAddressWitnessTaproot(hrp, witnessProg)
 				}
+				return newAddressWitnessUnknown(hrp, witnessVer, witnessProg)
 			}
 		}
 	}
@@ -634,20 +637,73 @@ type AddressWitnessScriptHash struct {
 	witnessProgram [32]byte
 }
 
-// NewAddressWitnessScriptHash returns a new AddressWitnessPubKeyHash.
-func NewAddressWitnessScriptHash(witnessProg []byte, net *chaincfg.Params) (*AddressWitnessScriptHash, error) {
-	return newAddressWitnessScriptHash(net.Bech32HRPSegwit, 0, witnessProg)
+type AddressWitnessTaproot struct {
+	AddressWitnessScriptHash
 }
 
-// NewAddressWitnessTaproot returns a new AddressWitnessPubKeyHash v1.
-func NewAddressWitnessTaproot(witnessProg []byte, net *chaincfg.Params) (*AddressWitnessScriptHash, error) {
-	return newAddressWitnessScriptHash(net.Bech32HRPSegwit, 1, witnessProg)
+type AddressWitnessUnknown struct {
+	hrp            string
+	witnessVersion byte
+	witnessProgram []byte
+}
+
+// EncodeAddress returns the bech32 string encoding of an
+// AddressWitnessUnknown.
+// Part of the Address interface.
+func (a *AddressWitnessUnknown) EncodeAddress() string {
+	str, err := encodeSegWitAddress(a.hrp, a.witnessVersion, a.witnessProgram)
+	if err != nil {
+		return ""
+	}
+	return str
+}
+
+// ScriptAddress returns the witness program for this address.
+// Part of the Address interface.
+func (a *AddressWitnessUnknown) ScriptAddress() []byte {
+	return a.witnessProgram
+}
+
+// IsForNet returns whether or not the AddressWitnessUnknown is associated
+// with the passed bitcoin network.
+// Part of the Address interface.
+func (a *AddressWitnessUnknown) IsForNet(net *chaincfg.Params) bool {
+	return a.hrp == net.Bech32HRPSegwit
+}
+
+// String returns a human-readable string for the AddressWitnessPubKeyHash.
+// This is equivalent to calling EncodeAddress, but is provided so the type
+// can be used as a fmt.Stringer.
+// Part of the Address interface.
+func (a *AddressWitnessUnknown) String() string {
+	return a.EncodeAddress()
+}
+
+// Hrp returns the human-readable part of the bech32 encoded
+// AddressWitnessScriptHash.
+func (a *AddressWitnessUnknown) Hrp() string {
+	return a.hrp
+}
+
+// WitnessVersion returns the witness version of the AddressWitnessScriptHash.
+func (a *AddressWitnessUnknown) WitnessVersion() byte {
+	return a.witnessVersion
+}
+
+// WitnessProgram returns the witness program of the AddressWitnessScriptHash.
+func (a *AddressWitnessUnknown) WitnessProgram() []byte {
+	return a.witnessProgram
+}
+
+// NewAddressWitnessScriptHash returns a new AddressWitnessPubKeyHash.
+func NewAddressWitnessScriptHash(witnessProg []byte, net *chaincfg.Params) (*AddressWitnessScriptHash, error) {
+	return newAddressWitnessScriptHash(net.Bech32HRPSegwit, witnessProg)
 }
 
 // newAddressWitnessScriptHash is an internal helper function to create an
 // AddressWitnessScriptHash with a known human-readable part, rather than
 // looking it up through its parameters.
-func newAddressWitnessScriptHash(hrp string, witnessVer byte, witnessProg []byte) (*AddressWitnessScriptHash, error) {
+func newAddressWitnessScriptHash(hrp string, witnessProg []byte) (*AddressWitnessScriptHash, error) {
 	// Check for valid program length for witness version 0, which is 32
 	// for P2WSH.
 	if len(witnessProg) != 32 {
@@ -657,12 +713,47 @@ func newAddressWitnessScriptHash(hrp string, witnessVer byte, witnessProg []byte
 
 	addr := &AddressWitnessScriptHash{
 		hrp:            strings.ToLower(hrp),
-		witnessVersion: witnessVer,
+		witnessVersion: 0,
 	}
 
 	copy(addr.witnessProgram[:], witnessProg)
 
 	return addr, nil
+}
+
+// NewAddressWitnessTaproot returns a new AddressWitnessTaproot.
+func NewAddressWitnessTaproot(witnessProg []byte, net *chaincfg.Params) (*AddressWitnessTaproot, error) {
+	return newAddressWitnessTaproot(net.Bech32HRPSegwit, witnessProg)
+}
+
+// newAddressWitnessTaproot returns a new AddressWitnessTaproot.
+func newAddressWitnessTaproot(hrp string, witnessProg []byte) (*AddressWitnessTaproot, error) {
+	// Check for valid program length for witness version 0, which is 32 for taproot
+	if len(witnessProg) != 32 {
+		return nil, errors.New("witness program must be 32 bytes for witness_v1_taproot")
+	}
+
+	addr := AddressWitnessTaproot{}
+	addr.hrp = strings.ToLower(hrp)
+	addr.witnessVersion = 1
+	copy(addr.witnessProgram[:], witnessProg)
+
+	return &addr, nil
+}
+
+// NewAddressWitnessUnknown returns a new AddressWitnessUnknown.
+func NewAddressWitnessUnknown(witnessVer byte, witnessProg []byte, net *chaincfg.Params) (*AddressWitnessUnknown, error) {
+	return newAddressWitnessUnknown(net.Bech32HRPSegwit, witnessVer, witnessProg)
+}
+
+// newAddressWitnessUnknown returns a new AddressWitnessUnknown.
+func newAddressWitnessUnknown(hrp string, witnessVer byte, witnessProg []byte) (*AddressWitnessUnknown, error) {
+	addr := AddressWitnessUnknown{
+		hrp:            strings.ToLower(hrp),
+		witnessVersion: witnessVer,
+		witnessProgram: witnessProg,
+	}
+	return &addr, nil
 }
 
 // EncodeAddress returns the bech32 string encoding of an
