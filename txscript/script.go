@@ -80,6 +80,14 @@ func isWitnessScriptHash(pops []parsedOpcode) bool {
 		pops[1].opcode.value == OP_DATA_32
 }
 
+// isWitnessTaproot returns true if the passed script is a
+// witness v1 taproot transaction, false otherwise.
+func isWitnessTaproot(pops []parsedOpcode) bool {
+	return len(pops) == 2 &&
+		pops[0].opcode.value == OP_1 &&
+		pops[1].opcode.value == OP_DATA_32
+}
+
 // IsPayToWitnessScriptHash returns true if the is in the standard
 // pay-to-witness-script-hash (P2WSH) format, false otherwise.
 func IsPayToWitnessScriptHash(script []byte) bool {
@@ -843,6 +851,15 @@ func getWitnessSigOps(pkScript []byte, witness wire.TxWitness) int {
 			witnessScript := witness[len(witness)-1]
 			pops, _ := parseScript(witnessScript)
 			return getSigOpCount(pops, true)
+		}
+	case 1:
+		switch {
+		// TODO: this probably could be improved
+		case len(witnessProgram) == payToTaprootScriptHashDataSize &&
+			len(witness) == 1 &&
+			(len(witness[0]) == 64 || len(witness[0]) == 65):
+			// return one sig op for taproot
+			return 1
 		}
 	}
 

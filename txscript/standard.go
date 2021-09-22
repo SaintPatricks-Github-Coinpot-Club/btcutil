@@ -56,6 +56,7 @@ const (
 	WitnessV0PubKeyHashTy                    // Pay witness pubkey hash.
 	ScriptHashTy                             // Pay to script hash.
 	WitnessV0ScriptHashTy                    // Pay to witness script hash.
+	WitnessV1TaprootTy                       // Witness v1 taproot
 	MultiSigTy                               // Multi signature.
 	NullDataTy                               // Empty data-only (provably prunable).
 )
@@ -69,6 +70,7 @@ var scriptClassToName = []string{
 	WitnessV0PubKeyHashTy: "witness_v0_keyhash",
 	ScriptHashTy:          "scripthash",
 	WitnessV0ScriptHashTy: "witness_v0_scripthash",
+	WitnessV1TaprootTy:    "witness_v1_taproot",
 	MultiSigTy:            "multisig",
 	NullDataTy:            "nulldata",
 }
@@ -169,6 +171,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return ScriptHashTy
 	} else if isWitnessScriptHash(pops) {
 		return WitnessV0ScriptHashTy
+	} else if isWitnessTaproot(pops) {
+		return WitnessV1TaprootTy
 	} else if isMultiSig(pops) {
 		return MultiSigTy
 	} else if isNullData(pops) {
@@ -210,6 +214,9 @@ func expectedInputs(pops []parsedOpcode, class ScriptClass) int {
 
 	case WitnessV0ScriptHashTy:
 		// Not including script.  That is handled by the caller.
+		return 1
+
+	case WitnessV1TaprootTy:
 		return 1
 
 	case MultiSigTy:
@@ -342,6 +349,12 @@ func CalcScriptInfo(sigScript, pkScript []byte, witness wire.TxWitness,
 			si.ExpectedInputs += shInputs
 		}
 
+		si.SigOps = GetWitnessSigOpCount(sigScript, pkScript, witness)
+		si.NumInputs = len(witness)
+
+	case si.PkScriptClass == WitnessV1TaprootTy && segwit:
+		// The witness script is not parseable
+		si.ExpectedInputs = 1
 		si.SigOps = GetWitnessSigOpCount(sigScript, pkScript, witness)
 		si.NumInputs = len(witness)
 
@@ -588,6 +601,18 @@ func ExtractPkScriptAddrs(pkScript []byte, chainParams *chaincfg.Params) (Script
 		// Skip the script hash if it's invalid for some reason.
 		requiredSigs = 1
 		addr, err := btcutil.NewAddressWitnessScriptHash(pops[1].data,
+			chainParams)
+		if err == nil {
+			addrs = append(addrs, addr)
+		}
+
+	case WitnessV1TaprootTy:
+		// A pay-to-witness-script-hash script is of the form:
+		//  OP_1 <32-byte hash>
+		// Therefore, the script hash is the second item on the stack.
+		// Skip the script hash if it's invalid for some reason.
+		requiredSigs = 1
+		addr, err := btcutil.NewAddressWitnessTaproot(pops[1].data,
 			chainParams)
 		if err == nil {
 			addrs = append(addrs, addr)

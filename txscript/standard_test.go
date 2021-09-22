@@ -346,7 +346,9 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 	for i, test := range tests {
 		class, addrs, reqSigs, err := ExtractPkScriptAddrs(
 			test.script, &chaincfg.MainNetParams)
-		if err != nil {
+		if err != nil && test.name != "script that does not parse" {
+			t.Fatalf(" #%d (%s) unable to extract pkscript"+
+				"addrs: %v", i, test.name, err)
 		}
 
 		if !reflect.DeepEqual(addrs, test.addrs) {
@@ -524,6 +526,21 @@ func TestCalcScriptInfo(t *testing.T) {
 				PkScriptClass:  WitnessV0ScriptHashTy,
 				NumInputs:      3,
 				ExpectedInputs: 3,
+				SigOps:         1,
+			},
+		},
+		{
+			// A v1 taproot
+			name:     "taproot witness v1 script",
+			pkScript: "OP_1 DATA_32 0xa60d70cfba37177d8239d018185d864b2bdd0caf5e175fd4454cc006fd2d75ac",
+			witness: []string{
+				"c89687ac831d2e340f773a833627e0f8b25b614254f7e001b2abbb9738dd14ef53714efc3abce02d059c06c88e9c2babe300d71e1f3f661989d18f182b120cd7",
+			},
+			segwit: true,
+			scriptInfo: ScriptInfo{
+				PkScriptClass:  WitnessV1TaprootTy,
+				NumInputs:      1,
+				ExpectedInputs: 1,
 				SigOps:         1,
 			},
 		},
@@ -1044,6 +1061,12 @@ var scriptClassTests = []struct {
 		script: "0 DATA_32 0x9f96ade4b41d5433f4eda31e1738ec2b36f6e7d1420d94a6af99801a88f7f7ff",
 		class:  WitnessV0ScriptHashTy,
 	},
+	{
+		// Witness v1 taproot
+		name:   "Witness v1 taproot",
+		script: "OP_1 DATA_32 0xa60d70cfba37177d8239d018185d864b2bdd0caf5e175fd4454cc006fd2d75ac",
+		class:  WitnessV1TaprootTy,
+	},
 }
 
 // TestScriptClass ensures all the scripts in scriptClassTests have the expected
@@ -1101,6 +1124,11 @@ func TestStringifyClass(t *testing.T) {
 			name:     "witnessscripthash",
 			class:    WitnessV0ScriptHashTy,
 			stringed: "witness_v0_scripthash",
+		},
+		{
+			name:     "witnessstaproot",
+			class:    WitnessV1TaprootTy,
+			stringed: "witness_v1_taproot",
 		},
 		{
 			name:     "multisigty",

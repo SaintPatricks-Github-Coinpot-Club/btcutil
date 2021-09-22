@@ -110,6 +110,10 @@ const (
 	// payToWitnessScriptHashDataSize is the size of the witness program's
 	// data push for a pay-to-witness-script-hash output.
 	payToWitnessScriptHashDataSize = 32
+
+	// payToTaprootScriptHashDataSize is the size of the witness program's
+	// data push for a witness_v1_taproot output.
+	payToTaprootScriptHashDataSize = 32
 )
 
 // halforder is used to tame ECDSA malleability (see BIP0062).
