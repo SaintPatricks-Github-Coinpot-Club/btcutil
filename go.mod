@@ -1,4 +1,4 @@
-module github.com/martinboehm/btcutil
+module github.com/binance-chain/btcutil
 
 go 1.17
 
