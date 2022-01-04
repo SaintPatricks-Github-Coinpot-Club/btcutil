@@ -826,7 +826,7 @@ func IsScriptHashAddrID(id []byte, params ...*Params) bool {
 		return ok
 	}
 
-	return string(id) == string(params[0].PubKeyHashAddrID[:params[0].AddressMagicLen])
+	return string(id) == string(params[0].ScriptHashAddrID[:params[0].AddressMagicLen])
 }
 
 // IsBech32SegwitPrefix returns whether the prefix is a known prefix for segwit
