@@ -824,10 +824,15 @@ func IsScriptHashAddrID(id []byte) bool {
 // IsBech32SegwitPrefix returns whether the prefix is a known prefix for segwit
 // addresses on any default or registered network.  This is used when decoding
 // an address string into a specific address type.
-func IsBech32SegwitPrefix(prefix string) bool {
+func IsBech32SegwitPrefix(prefix string, params ...*Params) bool {
 	prefix = strings.ToLower(prefix)
-	_, ok := bech32SegwitPrefixes[prefix]
-	return ok
+	if len(params) == 0 || params[0] == nil {
+		_, ok := bech32SegwitPrefixes[prefix]
+		return ok
+	}
+	p := params[0]
+	hrpPrefix := p.Bech32HRPSegwit + "1"
+	return hrpPrefix == prefix
 }
 
 // HDPrivateKeyToPublicKeyID accepts a private hierarchical deterministic

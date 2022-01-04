@@ -148,7 +148,7 @@ func DecodeAddress(addr string, defaultNet *chaincfg.Params) (Address, error) {
 	oneIndex := strings.LastIndexByte(addr, '1')
 	if oneIndex > 1 {
 		prefix := addr[:oneIndex+1]
-		if chaincfg.IsBech32SegwitPrefix(prefix) {
+		if chaincfg.IsBech32SegwitPrefix(prefix, defaultNet) {
 			witnessVer, witnessProg, err := decodeSegWitAddress(addr)
 			// Some non-segwit addresses (for example, Litecoin `L` addresses)
 			// may also start with the segwit prefix even though they are
