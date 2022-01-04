@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/binance-chain/btcutil/base58"
+	"github.com/binance-chain/btcutil/bech32"
+	"github.com/binance-chain/btcutil/chaincfg"
 	"github.com/martinboehm/btcd/btcec"
-	"github.com/martinboehm/btcutil/base58"
-	"github.com/martinboehm/btcutil/bech32"
-	"github.com/martinboehm/btcutil/chaincfg"
 	"golang.org/x/crypto/ripemd160"
 )
 

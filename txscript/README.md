@@ -1,9 +1,9 @@
 txscript
 ========
 
-[![Build Status](https://travis-ci.org/martinboehm/btcutil.png?branch=master)](https://travis-ci.org/martinboehm/btcutil)
+[![Build Status](https://travis-ci.org/binance-chain/btcutil.png?branch=master)](https://travis-ci.org/binance-chain/btcutil)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://godoc.org/github.com/martinboehm/btcutil/txscript?status.png)](http://godoc.org/github.com/martinboehm/btcutil/txscript)
+[![GoDoc](https://godoc.org/github.com/binance-chain/btcutil/txscript?status.png)](http://godoc.org/github.com/binance-chain/btcutil/txscript)
 
 Package txscript implements the bitcoin transaction script language.  There is
 a comprehensive test suite.

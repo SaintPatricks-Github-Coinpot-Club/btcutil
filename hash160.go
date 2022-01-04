@@ -8,8 +8,8 @@ import (
 	"crypto/sha256"
 	"hash"
 
+	"github.com/binance-chain/btcutil/base58"
 	"github.com/dchest/blake256"
-	"github.com/martinboehm/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
 

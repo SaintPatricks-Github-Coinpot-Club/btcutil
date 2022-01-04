@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/binance-chain/btcutil/chaincfg"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/martinboehm/btcd/wire"
-	"github.com/martinboehm/btcutil/chaincfg"
 )
 
 // genTestTx creates a random transaction for uses within test cases.

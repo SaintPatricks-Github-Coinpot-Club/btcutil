@@ -30,6 +30,7 @@ github.com/martinboehm/btcd v0.0.0-20190104121910-8e7c0427fee5/go.mod h1:rKQj/jG
 github.com/martinboehm/btcd v0.0.0-20211010165247-d1f65b0f30fa h1:n8hCPoGumR6jNmNTMAo/VqDOw1yxUf0UCXJVZwf+JLQ=
 github.com/martinboehm/btcd v0.0.0-20211010165247-d1f65b0f30fa/go.mod h1:YGXD0z/xtFXFF5jFp1GaVnrKRlEADn4pD47Zu4xaLg0=
 github.com/martinboehm/btcutil v0.0.0-20180706230648-ab6388e0c60a/go.mod h1:NIviPmxe43yBgIB4HGB4w4kv9/s5kaDa/pi+wZAAxQo=
+github.com/martinboehm/btcutil v0.0.0-20210922221517-e83b0c752949 h1:GdmOPmno0QNl9jVMJZOTj7ekgGA9zRG6gn1X9jutrkU=
 github.com/martinboehm/btcutil v0.0.0-20210922221517-e83b0c752949/go.mod h1:8iJaVY/VHW6lnojpTXf5X4gF2dx81Xtj2R6lJp2colA=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.4.1/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=

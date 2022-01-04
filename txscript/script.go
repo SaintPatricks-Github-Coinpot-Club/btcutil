@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/binance-chain/btcutil"
+	"github.com/binance-chain/btcutil/base58"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
 	"github.com/martinboehm/btcd/wire"
-	"github.com/martinboehm/btcutil"
-	"github.com/martinboehm/btcutil/base58"
 )
 
 // Bip16Activation is the timestamp where BIP0016 is valid to use in the

@@ -11,11 +11,11 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/binance-chain/btcutil"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
 	"github.com/martinboehm/btcd/txscript"
 	"github.com/martinboehm/btcd/wire"
-	"github.com/martinboehm/btcutil"
 )
 
 // Test vectors from:
