@@ -805,9 +805,13 @@ func RegisterBitcoinParams() {
 // to the caller to check both this and IsScriptHashAddrID and decide whether an
 // address is a pubkey hash address, script hash address, neither, or
 // undeterminable (if both return true).
-func IsPubKeyHashAddrID(id []byte) bool {
-	_, ok := pubKeyHashAddrIDs[string(id)]
-	return ok
+func IsPubKeyHashAddrID(id []byte, params ...*Params) bool {
+	if len(params) == 0 || params[0] == nil {
+		_, ok := pubKeyHashAddrIDs[string(id)]
+		return ok
+	}
+
+	return string(id) == string(params[0].PubKeyHashAddrID[:params[0].AddressMagicLen])
 }
 
 // IsScriptHashAddrID returns whether the id is an identifier known to prefix a
@@ -816,9 +820,13 @@ func IsPubKeyHashAddrID(id []byte) bool {
 // to the caller to check both this and IsPubKeyHashAddrID and decide whether an
 // address is a pubkey hash address, script hash address, neither, or
 // undeterminable (if both return true).
-func IsScriptHashAddrID(id []byte) bool {
-	_, ok := scriptHashAddrIDs[string(id)]
-	return ok
+func IsScriptHashAddrID(id []byte, params ...*Params) bool {
+	if len(params) == 0 || params[0] == nil {
+		_, ok := scriptHashAddrIDs[string(id)]
+		return ok
+	}
+
+	return string(id) == string(params[0].PubKeyHashAddrID[:params[0].AddressMagicLen])
 }
 
 // IsBech32SegwitPrefix returns whether the prefix is a known prefix for segwit
@@ -838,19 +846,25 @@ func IsBech32SegwitPrefix(prefix string, params ...*Params) bool {
 // HDPrivateKeyToPublicKeyID accepts a private hierarchical deterministic
 // extended key id and returns the associated public key id.  When the provided
 // id is not registered, the ErrUnknownHDKeyID error will be returned.
-func HDPrivateKeyToPublicKeyID(id []byte) ([]byte, error) {
+func HDPrivateKeyToPublicKeyID(id []byte, params ...*Params) ([]byte, error) {
 	if len(id) != 4 {
 		return nil, ErrUnknownHDKeyID
 	}
 
 	var key [4]byte
 	copy(key[:], id)
-	pubBytes, ok := hdPrivToPubKeyIDs[key]
-	if !ok {
-		return nil, ErrUnknownHDKeyID
+	if len(params) == 0 || params[0] == nil {
+		pubBytes, ok := hdPrivToPubKeyIDs[key]
+		if !ok {
+			return nil, ErrUnknownHDKeyID
+		}
+		return pubBytes, nil
 	}
 
-	return pubBytes, nil
+	if key == params[0].HDPrivateKeyID {
+		return params[0].HDPublicKeyID[:], nil
+	}
+	return nil, ErrUnknownHDKeyID
 }
 
 // newHashFromStr converts the passed big-endian hex string into a
